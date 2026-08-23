@@ -1,1 +1,399 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranieri Core — Центральный пульт управления холдингом</title>
+    <script src="https://tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #020617; }
+        .code-font { font-family: 'JetBrains Mono', monospace; }
+        .neon-glow-cyan { box-shadow: 0 0 15px -3px rgba(34, 211, 238, 0.4); }
+        .neon-glow-emerald { box-shadow: 0 0 15px -3px rgba(52, 211, 153, 0.4); }
+        .neon-glow-red { box-shadow: 0 0 15px -3px rgba(239, 68, 68, 0.4); }
+        .spinner {
+            border: 3px solid rgba(34, 211, 238, 0.1);
+            border-top: 3px solid #22d3ee;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            z-index: 9999;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            animation: slideIn 0.3s ease-out;
+            max-width: 400px;
+        }
+        .toast-success { background: #065f46; color: #34d399; border: 1px solid #34d399; }
+        .toast-error { background: #7f1d1d; color: #f87171; border: 1px solid #f87171; }
+        .toast-info { background: #1e3a5f; color: #60a5fa; border: 1px solid #60a5fa; }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen p-6">
 
+    <div class="max-w-7xl mx-auto">
+        <!-- ВЕРХНЯЯ ПАНЕЛЬ ХЕДЕРА -->
+        <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center border-b border-slate-800 pb-6 mb-8 gap-4">
+            <div>
+                <div class="flex items-center space-x-3">
+                    <span class="bg-cyan-500 text-slate-950 font-black text-xs px-2.5 py-1 rounded-md tracking-wider uppercase">SaaS + B2G</span>
+                    <h1 class="text-3xl font-extrabold tracking-tight text-white">Ranieri Core <span class="text-cyan-400 font-light">Control Room</span></h1>
+                </div>
+                <p class="text-slate-400 text-sm mt-1">Единый контур управления ИИ-скорингом, B2G-фабрикой госзакупок и ИБ-инфраструктурой холдинга</p>
+            </div>
+            
+            <!-- СТАТУС-ПАНЕЛЬ ФИНАНСОВОГО ЗДОРОВЬЯ -->
+            <div class="flex flex-wrap gap-4 w-full lg:w-auto">
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl min-w-[200px] flex-1 lg:flex-none">
+                    <span class="text-xs text-slate-400 block uppercase font-bold tracking-wider mb-1">Выручка Холдинга (План Г1)</span>
+                    <span class="text-2xl font-black text-cyan-400" id="revenueDisplay">410.0 млн ₽</span>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl min-w-[200px] flex-1 lg:flex-none neon-glow-emerald">
+                    <span class="text-xs text-slate-400 block uppercase font-bold tracking-wider mb-1">Чистая прибыль (Льготная ИТ)</span>
+                    <span class="text-2xl font-black text-emerald-400" id="profitDisplay">133.0 млн ₽</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- ТРЁХКОЛОНОЧНЫЙ ИНТЕРФЕЙС ПУЛЬТА СТАРТА -->
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            
+            <!-- ЛЕВАЯ КОЛОНКА: СТРАТЕГИЧЕСКИЙ КОНТУР И РИСК-УПРАВЛЕНИЕ -->
+            <div class="space-y-6">
+                <!-- КНОПКА СТРАТЕГИЧЕСКОГО ВЕТО (ВАШ ПУЛЬТ ПРЕДСЕДАТЕЛЯ СД) -->
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-extrabold text-white">👑 Пульт Председателя СД</h2>
+                        <span class="bg-red-500/10 text-red-400 text-[10px] font-bold px-2 py-0.5 rounded border border-red-500/20 uppercase tracking-widest">Hard-Stop Контур</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4">Принудительная мгновенная блокировка транзакций и выкупов пулов девелоперов в случае обнаружения фрода или ценовых аномалий ИИ-моделью.</p>
+                    <button onclick="triggerChairmanVeto()" class="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-black tracking-wider py-4 px-4 rounded-xl shadow-lg transition active:scale-95 uppercase text-sm">
+                        Активировать Стратегическое ВЕТО
+                    </button>
+                    <div id="vetoStatus" class="hidden mt-3 text-center text-xs font-bold p-2 bg-red-950/50 text-red-400 border border-red-900/50 rounded-lg code-font animate-pulse">
+                        [CRITICAL ALERT]: КНОПКА ВЕТО АКТИВИРОВАНА. СДЕЛКА ЗАБЛОКИРОВАНА.
+                    </div>
+                </div>
+
+                <!-- МОДУЛЬ ПРАВЛЕНИЯ "КОМИТЕТЫ" -->
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
+                    <h2 class="text-lg font-extrabold mb-3 text-white">🏛️ Заседания Комитета Правления</h2>
+                    <p class="text-xs text-slate-400 mb-4">Переключение финансового водопада (Waterfall) СФО при достижении триггера дефолтов по данным MLOps.</p>
+                    <div class="space-y-2">
+                        <button onclick="castCommitteeVote('SEQUENTIAL')" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 font-bold p-3 rounded-xl text-left text-xs transition flex justify-between items-center">
+                            <span>1. Триггер: Sequential Paydown (Заморозка Класса Б)</span>
+                            <span class="bg-amber-400/10 text-amber-400 px-1.5 py-0.5 rounded border border-amber-400/20 text-[10px]">Аварийный</span>
+                        </button>
+                        <button onclick="castCommitteeVote('REVOLVING')" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 font-bold p-3 rounded-xl text-left text-xs transition flex justify-between items-center">
+                            <span>2. Триггер: Револьверный период (Стабильный пул)</span>
+                            <span class="bg-emerald-400/10 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-400/20 text-[10px]">Штатный</span>
+                        </button>
+                    </div>
+                    <div id="committeeOutput" class="hidden mt-3 p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs code-font text-slate-300 space-y-1"></div>
+                </div>
+
+                <!-- ЛК ГЛАВНОГО БУХГАЛТЕРА: B2B БИЛЛИНГ -->
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
+                    <h2 class="text-lg font-extrabold mb-2 text-white">📊 Бухгалтерский B2B Клиринг</h2>
+                    <p class="text-xs text-slate-400 mb-4">Автоматическое списание расходов банка на ИТ-обслуживание по тарифу 7 130 ₽ за скоринг-запрос (Метод Cost Plus для оптимизации налогов ФНС).</p>
+                    <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 mb-4">
+                        <div class="flex justify-between items-center text-xs mb-2">
+                            <span class="text-slate-400">Переведено в ИТ-дочку за сегодня:</span>
+                            <span id="accountantTransferred" class="font-bold text-white code-font">0.00 ₽</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-400">Экономия на ИТ-льготах Минцифры:</span>
+                            <span id="accountantTaxShield" class="font-bold text-emerald-400 code-font">0.00 ₽</span>
+                        </div>
+                    </div>
+                    <button onclick="runWaterfallClearing()" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold p-3 rounded-xl text-xs transition">
+                        Запустить расчет купонного Водопада СФО
+                    </button>
+                </div>
+            </div>
+
+            <!-- ЦЕНТРАЛЬНАЯ КОЛОНКА: СИМУЛЯТОР КЛИЕНТСКОГО СКОРИНГА И СМЭВ -->
+            <div class="xl:col-span-2 bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-extrabold text-white">🚀 Оболочка ИИ-Скоринга (Клиентский контур)</h2>
+                        <div class="flex items-center space-x-2 text-xs text-slate-400">
+                            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                            <span>SMEV 3.0 ШЛЮЗ АКТИВЕН</span>
+                        </div>
+                    </div>
+
+                    <!-- ПОЛЯ ФОРМЫ ЗАЯВКИ -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">UID Клиента в банке</label>
+                            <input id="clientUid" type="text" value="CLI-CONVEYER-2026" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-cyan-500 code-font">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">Сумма кредита (Запрос), ₽</label>
+                            <input id="loanAmt" type="number" value="6500000" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-cyan-500 code-font">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">Цена застройщика (Объект), ₽</label>
+                            <input id="propValue" type="number" value="8200000" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-cyan-500 code-font">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">Площадь недвижимости, кв.м</label>
+                            <input id="totalArea" type="number" value="55" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-cyan-500 code-font">
+                        </div>
+                    </div>
+
+                    <!-- ТИП СКОРИНГА -->
+                    <div class="mb-6 flex flex-wrap items-center gap-4">
+                        <label class="text-sm font-bold text-slate-400 uppercase tracking-wider">Тип проверки:</label>
+                        <select id="scoringType" class="bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-cyan-500 code-font flex-1">
+                            <option value="BASE">BASE Контур (ФНС + ФССП) — 70 ₽</option>
+                            <option value="PREMIUM" selected>PREMIUM Контур (Госуслуги + LSTR-AVM) — 250 ₽</option>
+                        </select>
+                    </div>
+
+                    <!-- КНОПКА ЗАПУСКА И ИНДИКАТОР ЗАГРУЗКИ -->
+                    <div class="flex items-center gap-4">
+                        <button onclick="executeClientScoring()" class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 transition p-4 rounded-xl font-bold text-slate-900 text-lg tracking-wide shadow-lg">
+                            Выполнить сквозной асинхронный скоринг (STP за 90 сек)
+                        </button>
+                        <div id="loadingSpinner" class="hidden">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- КОНСОЛЬ РЕЗУЛЬТАТОВ -->
+                    <div id="conveyorOutput" class="hidden mt-6 bg-slate-950 border border-slate-700 rounded-xl p-5 fade-in">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-cyan-400 font-bold uppercase tracking-wider text-xs">⚡ ЛОГ АНДЕРРАЙТИНГА ВЫЗОВА API:</h3>
+                            <span class="text-xs text-slate-500 code-font" id="responseTime"></span>
+                        </div>
+                        <div id="verdictBadge" class="text-center font-black py-2 rounded-xl text-sm"></div>
+                        <div id="jsonMetrics" class="mt-3 code-font text-xs text-slate-300 whitespace-pre-wrap bg-slate-900 p-4 rounded-lg border border-slate-800 overflow-x-auto"></div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- МОДУЛЬ ЛОГИКИ И ИНТЕГРАЦИИ С BACKEND API -->
+    <script>
+        const API_BASE = "http://localhost:8000/api/v1/saas";
+        const API_KEY = "bank_alpha_token_123";
+
+        // Глобальное состояние
+        let accumulatedBilling = 0;
+        let isVetoed = false;
+
+        // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ: УВЕДОМЛЕНИЯ ---
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerText = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        // --- КНОПКА ВЕТО ---
+        function triggerChairmanVeto() {
+            isVetoed = true;
+            const badge = document.getElementById("vetoStatus");
+            badge.classList.remove("hidden");
+            showToast("🔴 Право стратегического ВЕТО активировано. Все последующие одобрения заблокированы.", "error");
+        }
+
+        // --- ГОЛОСОВАНИЕ КОМИТЕТА ---
+        function castCommitteeVote(type) {
+            const block = document.getElementById("committeeOutput");
+            block.classList.remove("hidden");
+            if(type === 'SEQUENTIAL') {
+                block.innerHTML = `
+                    <div class="text-red-400 font-bold">[VOTE COMPLETED]: Сработал аварийный триггер дефолтов!</div>
+                    <div class="text-slate-400">• Голоса членов Правления: 3/3 (Кворум достигнут)</div>
+                    <div class="text-slate-400">• Результат: Водопад СФО переведен в режим SEQUENTIAL PAYDOWN. Купоны Мезонина (Класс Б) заморожены. Все средства направлены на гашение номинала НПФ (Класс А).</div>
+                `;
+                showToast("🏛️ Комитет Правления принял решение: SEQUENTIAL PAYDOWN", "info");
+            } else {
+                block.innerHTML = `
+                    <div class="text-emerald-400 font-bold">[VOTE COMPLETED]: Пул стабилен.</div>
+                    <div class="text-slate-400">• Голоса членов Правления: 3/3 (Кворум достигнут)</div>
+                    <div class="text-slate-400">• Результат: Сохранен стандартный REVOLVING режим автоматического реинвестирования пула в СФО.</div>
+                `;
+                showToast("🏛️ Комитет Правления принял решение: REVOLVING режим сохранен", "success");
+            }
+        }
+
+        // --- ВОДОПАД СФО (ГЛАВБУХ) ---
+        function runWaterfallClearing() {
+            if (accumulatedBilling === 0) {
+                showToast("Ошибка Главбуха: Сводный лог транзакций за сегодня пуст. Сначала прогоните заемщиков через форму скоринга.", "error");
+                return;
+            }
+            const total = accumulatedBilling * 14;
+            showToast(`✅ [CLEARING]: Ежемесячный купонный водопад СФО успешно обсчитан. Всего расщеплено и распределено платежей за период: ${total.toLocaleString('ru-RU')} ₽. Налоги ИТ-дочки оптимизированы.`, "success");
+        }
+
+        // --- ГЛАВНАЯ ФУНКЦИЯ СКОРИНГА ---
+        async function executeClientScoring() {
+            // 1. Валидация полей
+            const loan = document.getElementById("loanAmt").value;
+            const area = document.getElementById("totalArea").value;
+            const prop = document.getElementById("propValue").value;
+
+            if (!loan || parseFloat(loan) <= 0) {
+                showToast("Ошибка: Укажите корректную сумму кредита (больше 0)", "error");
+                return;
+            }
+            if (!area || parseFloat(area) <= 0) {
+                showToast("Ошибка: Укажите корректную площадь недвижимости (больше 0)", "error");
+                return;
+            }
+            if (!prop || parseFloat(prop) <= 0) {
+                showToast("Ошибка: Укажите корректную цену застройщика (больше 0)", "error");
+                return;
+            }
+
+            // 2. Показать спиннер и скрыть старый вывод
+            document.getElementById("loadingSpinner").classList.remove("hidden");
+            document.getElementById("conveyorOutput").classList.add("hidden");
+
+            // 3. Подготовка данных
+            const payload = {
+                client_uid: document.getElementById("clientUid").value || "CLI-CONVEYER-2026",
+                snils: "123-456-789 00",
+                inn_fiz: "771234567890",
+                requested_loan_amount: parseFloat(loan),
+                declared_property_value: parseFloat(prop),
+                total_area: parseFloat(area),
+                house_type: "MONOLITH",
+                scoring_type: document.getElementById("scoringType").value
+            };
+
+            const startTime = performance.now();
+
+            try {
+                const response = await fetch(`${API_BASE}/evaluate?api_key=${API_KEY}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                const endTime = performance.now();
+                const elapsed = ((endTime - startTime) / 1000).toFixed(2);
+
+                // 4. Обработка ошибок
+                if (response.status === 402) {
+                    showToast("❌ Ошибка: Недостаточно средств на балансе SaaS-аккаунта!", "error");
+                    document.getElementById("loadingSpinner").classList.add("hidden");
+                    return;
+                }
+                if (!response.ok) {
+                    const errText = await response.text();
+                    showToast(`❌ Ошибка сервера (${response.status}): ${errText}`, "error");
+                    document.getElementById("loadingSpinner").classList.add("hidden");
+                    return;
+                }
+
+                const data = await response.json();
+
+                // 5. Обновление баланса (если есть)
+                if (data.remaining_license_balance_rub !== undefined) {
+                    // можно обновить где-то, но пока просто логируем
+                }
+
+                // 6. Накопление биллинга
+                accumulatedBilling += data.charged_rub || 0;
+                document.getElementById("accountantTransferred").innerText = `${accumulatedBilling.toLocaleString('ru-RU')}.00 ₽`;
+                document.getElementById("accountantTaxShield").innerText = `${(accumulatedBilling * 0.20).toLocaleString('ru-RU')}.00 ₽`;
+
+                // 7. Отрисовка результата
+                const outBlock = document.getElementById("conveyorOutput");
+                const badge = document.getElementById("verdictBadge");
+                const metrics = document.getElementById("jsonMetrics");
+                const timeSpan = document.getElementById("responseTime");
+
+                outBlock.classList.remove("hidden");
+                timeSpan.innerText = `⏱️ ${elapsed} сек.`;
+
+                // Определяем финальный вердикт (с учетом вето)
+                let finalVerdict = data.verdict || "APPROVE";
+                let reason = data.reason || "";
+
+                if (isVetoed) {
+                    finalVerdict = "VETOED";
+                    reason = "Сделка принудительно заблокирована и аннулирована КЭП Председателя Совета директоров.";
+                }
+
+                // Стилизация бейджа
+                if (finalVerdict === "APPROVE") {
+                    badge.className = "text-center font-black py-2 rounded-xl text-sm bg-emerald-950 text-emerald-400 border border-emerald-800 uppercase tracking-wider";
+                    badge.innerText = "СТАТУС: КРЕДИТ ОДОБРЕН И РАСПРЕДЕЛЕН В ПУЛ СФО";
+                } else if (finalVerdict === "VETOED") {
+                    badge.className = "text-center font-black py-2 rounded-xl text-sm bg-red-950 text-red-400 border border-red-800 uppercase tracking-wider animate-pulse";
+                    badge.innerText = "СТАТУС: ТРАНЗАКЦИЯ ЗАБЛОКИРОВАНА ПРАВОМ ВЕТО СД";
+                } else {
+                    badge.className = "text-center font-black py-2 rounded-xl text-sm bg-rose-950 text-rose-400 border border-rose-800 uppercase tracking-wider";
+                    badge.innerText = `СТАТУС: КРИТИЧЕСКИЙ ОТКАЗ КОНВЕЙЕРА (${finalVerdict})`;
+                }
+
+                // Формируем JSON-лог
+                let logJson = {
+                    scoring_uid: data.scoring_uid || "N/A",
+                    timestamp: data.timestamp || new Date().toISOString(),
+                    b2b_tariff_charged_rub: data.charged_rub || 0,
+                    verdict: finalVerdict,
+                    reason: reason,
+                    credit_risk_assessment: data.credit_risk_assessment || {}
+                };
+                if (data.property_valuation_lstr) {
+                    logJson.property_valuation_lstr = data.property_valuation_lstr;
+                }
+
+                metrics.innerHTML = JSON.stringify(logJson, null, 2);
+
+                // Плавный скролл к результатам
+                outBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // Успешное уведомление
+                showToast(`✅ Скоринг выполнен за ${elapsed} сек. Вердикт: ${finalVerdict}`, "success");
+
+            } catch (error) {
+                showToast(`❌ Критическая ошибка: ${error.message}`, "error");
+            } finally {
+                document.getElementById("loadingSpinner").classList.add("hidden");
+            }
+        }
+
+        // Автоматическая подстановка примера при загрузке
+        window.onload = function() {
+            // Можно сразу запустить демо-скоринг для наглядности
+            // но оставим пользователю инициативу
+        };
+    </script>
+
+</body>
+</html>
