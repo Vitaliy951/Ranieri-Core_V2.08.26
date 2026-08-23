@@ -1,1 +1,122 @@
+# .gitlab-ci.yml — CI/CD пайплайн для проекта Ranieri Core
 
+stages:
+  - test
+  - build
+  - security_scan
+  - deploy
+
+variables:
+  DOCKER_REGISTRY: "cr.yandex/ranieri-registry"        # Замените на ваш registry в Yandex Cloud
+  IMAGE_NAME: "ranieri-core"
+  IMAGE_TAG: "$CI_COMMIT_SHORT_SHA"
+  DOCKER_DRIVER: overlay2
+
+# ========================================================
+# ЭТАП 1: Тестирование (pytest, линтеры)
+# ========================================================
+run_tests:
+  stage: test
+  image: python:3.11-slim
+  before_script:
+    - pip install --no-cache-dir -r requirements.txt
+    - pip install pytest flake8 black
+  script:
+    # Проверка стиля кода (flake8)
+    - flake8 server.py src/ tests/ --max-line-length=120 --ignore=E203,W503
+    # Запуск юнит-тестов с покрытием
+    - pytest tests/ --cov=./ --cov-report=term-missing
+  coverage: '/TOTAL.+ ([0-9]{1,3}%)/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+  only:
+    - merge_requests
+    - main
+    - develop
+
+# ========================================================
+# ЭТАП 2: Сборка защищённого Docker-образа
+# ========================================================
+build_secure_image:
+  stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  before_script:
+    - docker login -u oauth -p $YANDEX_CLOUD_OAUTH_TOKEN cr.yandex
+  script:
+    - docker build -t $DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG -t $DOCKER_REGISTRY/$IMAGE_NAME:latest .
+    - docker push $DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+    - docker push $DOCKER_REGISTRY/$IMAGE_NAME:latest
+  only:
+    - main
+  tags:
+    - docker
+
+# ========================================================
+# ЭТАП 3: Безопасность — сканирование образа (Trivy)
+# ========================================================
+container_security_scan:
+  stage: security_scan
+  image: aquasec/trivy:latest
+  script:
+    # Сканирование критических уязвимостей (при обнаружении — пайплайн останавливается)
+    - trivy image --exit-code 1 --severity CRITICAL $DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+    # Сканирование высокорисковых уязвимостей (только логирование, не останавливает)
+    - trivy image --severity HIGH $DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+  only:
+    - main
+  allow_failure: false
+  tags:
+    - docker
+
+# ========================================================
+# ЭТАП 4: Деплой в Production Kubernetes
+# ========================================================
+deploy_to_production:
+  stage: deploy
+  image: lachlanevenson/k8s-kubectl:v1.26.0
+  before_script:
+    # Настройка доступа к кластеру Kubernetes
+    - kubectl config set-cluster k8s-prod --server=$K8S_PROD_SERVER
+    - kubectl config set-credentials gitlab-admin --token=$K8S_PROD_TOKEN
+    - kubectl config set-context default --cluster=k8s-prod --user=gitlab-admin
+    - kubectl config use-context default
+  script:
+    # Обновление образа в Deployment
+    - kubectl set image deployment/ranieri-api ranieri-api=$DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG -n ranieri-prod
+    # Проверка статуса развертывания (ожидание готовности)
+    - kubectl rollout status deployment/ranieri-api -n ranieri-prod --timeout=5m
+  only:
+    - main
+  when: manual
+  environment:
+    name: production
+    url: https://api.ranieri-core.ru
+  tags:
+    - k8s
+
+# ========================================================
+# (Опционально) Деплой в Staging для тестирования перед продакшеном
+# ========================================================
+deploy_to_staging:
+  stage: deploy
+  image: lachlanevenson/k8s-kubectl:v1.26.0
+  before_script:
+    - kubectl config set-cluster k8s-staging --server=$K8S_STAGING_SERVER
+    - kubectl config set-credentials gitlab-admin --token=$K8S_STAGING_TOKEN
+    - kubectl config set-context staging --cluster=k8s-staging --user=gitlab-admin
+    - kubectl config use-context staging
+  script:
+    - kubectl set image deployment/ranieri-api-staging ranieri-api=$DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG -n ranieri-staging
+    - kubectl rollout status deployment/ranieri-api-staging -n ranieri-staging --timeout=5m
+  only:
+    - develop
+  environment:
+    name: staging
+    url: https://staging.ranieri-core.ru
+  tags:
+    - k8s
