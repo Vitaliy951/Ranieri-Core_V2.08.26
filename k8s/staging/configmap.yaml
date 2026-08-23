@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ranieri-config-staging
+  namespace: ranieri-staging
+data:
+  CLICKHOUSE_HOST: "clickhouse-service.ranieri-staging.svc.cluster.local"
+  CLICKHOUSE_PORT: "8123"
+  CLICKHOUSE_DB: "cctech_audit_secure"
+  ALLOWED_ORIGINS: "https://staging.ranieri-core.ru"
+  LOG_LEVEL: "DEBUG"
+  ENVIRONMENT: "staging"
