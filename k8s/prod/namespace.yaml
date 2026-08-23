@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ranieri-prod
+  labels:
+    environment: production
+    app: ranieri-core
