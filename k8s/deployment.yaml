@@ -1,1 +1,41 @@
-
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ranieri-api
+  namespace: ranieri-prod
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ranieri-api
+  template:
+    metadata:
+      labels:
+        app: ranieri-api
+    spec:
+      containers:
+      - name: api
+        image: cr.yandex/ranieri-registry/ranieri-core:latest
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: ranieri-config
+        - secretRef:
+            name: ranieri-secrets
+        resources:
+          limits:
+            cpu: "2"
+            memory: "4Gi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
