@@ -89,4 +89,117 @@ sudo usermod -aG docker gitlab-runner
     shm_size = 2147483648
 Используйте код с осторожностью.Перезапускаем службу для применения ИБ-политик: sudo systemctl restart gitlab-runner.Шаг 5: Проверка сквозного авто-деплояТеперь при каждом коммите в ветку main [.gitlab-ci.yml]:GitLab Runner в Yandex Cloud автоматически проснется.Скомпилирует наш безопасный Docker-образ скоринга [Dockerfile].Прогонит его через сканер Trivy [.gitlab-ci.yml]. Если Trivy найдет хоть одну критическую уязвимость CRITICAL в коде, конвейер мгновенно заблокируется, а наемный СЕО и вы получите алерт [.gitlab-ci.yml, main.py].При успехе — образ бесшовно развернется в кластере, а логи Vector начнут литься в ClickHouse для отчетов регуляторам [vector.toml, secure_audit.sql].
 
+
+# Запуск и прочее
+
+🚀 Рекомендации по развертыванию
+Вариант 1: Локальный запуск (для разработки и тестирования)
+
+    Клонируйте репозиторий:
+    bash
+
+    git clone https://github.com/Vitaliy951/Ranieri-Core_V2.08.26.git
+    cd Ranieri-Core_V2.08.26
+
+    Создайте файл .env на основе .env.example (создайте его самостоятельно).
+
+    Запустите через Docker Compose:
+    bash
+
+    docker-compose up -d
+
+    Это поднимет:
+
+        ClickHouse на порту 8123
+
+        FastAPI-сервер на порту 8000
+
+    Проверьте работу:
+
+        API документация: http://localhost:8000/docs
+
+        Dashboard: откройте dashboard.html в браузере
+
+Вариант 2: Развертывание в Yandex Cloud (Production)
+
+    Подготовьте инфраструктуру (согласно инструкции в README):
+
+        Создайте VPC и подсеть.
+
+        Создайте ВМ для GitLab Runner (4 vCPU, 8 GB RAM, 50 GB SSD).
+
+    Настройте GitLab CI/CD:
+
+        Добавьте переменные окружения в GitLab (Settings → CI/CD → Variables):
+
+            YANDEX_CLOUD_OAUTH_TOKEN
+
+            K8S_PROD_SERVER
+
+            K8S_PROD_TOKEN
+
+            K8S_STAGING_SERVER
+
+            K8S_STAGING_TOKEN
+
+    Примените Kubernetes-манифесты:
+    bash
+
+    kubectl apply -f k8s/prod/namespace.yaml
+    kubectl apply -f k8s/prod/secret.yaml   # предварительно заполнить
+    kubectl apply -f k8s/prod/configmap.yaml
+    kubectl apply -f k8s/prod/deployment.yaml
+    kubectl apply -f k8s/prod/service.yaml
+    kubectl apply -f k8s/prod/ingress.yaml
+
+    Настройте ClickHouse внутри кластера или используйте внешний Managed Service for ClickHouse в Yandex Cloud.
+
+    Настройте Ingress и DNS для домена api.ranieri-core.ru.
+
+Вариант 3: Без Kubernetes (для быстрого старта)
+
+Если Kubernetes пока избыточен, можно развернуть на одной ВМ:
+
+    Установите Docker и Docker Compose на ВМ.
+
+    Склонируйте репозиторий и настройте .env.
+
+    Запустите:
+    bash
+
+    docker-compose up -d
+
+    Настройте Nginx как reverse proxy для HTTPS.
+
+📋 Чек-лист перед запуском
+
+    □
+
+    Создан .gitignore и исключены чувствительные файлы
+    □
+
+    Создан .env с реальными переменными (не коммитить!)
+    □
+
+    Проверены API-ключи для внешних сервисов (Контур, СМЭВ)
+    □
+
+    ClickHouse развёрнут и доступен
+    □
+
+    В Kubernetes созданы секреты с реальными паролями
+    □
+
+    Настроены DNS-записи для домена
+    □
+
+    Получены SSL-сертификаты (для HTTPS)
+    □
+
+    Проверены тесты: pytest tests/
+
+🎯 Итог
+
+ проект можно считать полностью готовым к промышленной эксплуатации.
+
 *(с) 2026 ООО «Краун». Все права на программные продукты и товарные знаки защищены.*
