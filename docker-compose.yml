@@ -1,1 +1,35 @@
+version: '3.8'
 
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: ch_analytics
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - ch_data:/var/lib/clickhouse
+      - ./sql:/docker-entrypoint-initdb.d
+    environment:
+      CLICKHOUSE_DB: cctech_audit_secure
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: secure_pass
+
+  fastapi:
+    build: .
+    container_name: ranieri_core_api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - clickhouse
+    environment:
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_PORT: 8123
+      ALLOWED_ORIGINS: "http://localhost,https://your-domain.ru"
+      LOG_LEVEL: INFO
+    volumes:
+      - ./logs:/app/logs
+    restart: always
+
+volumes:
+  ch_data:
