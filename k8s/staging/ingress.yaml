@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ranieri-ingress-staging
+  namespace: ranieri-staging
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+spec:
+  tls:
+  - hosts:
+    - staging.ranieri-core.ru
+    secretName: tls-secret-staging
+  rules:
+  - host: staging.ranieri-core.ru
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ranieri-service-staging
+            port:
+              number: 80
