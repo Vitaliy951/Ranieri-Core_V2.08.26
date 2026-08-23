@@ -1,1 +1,11 @@
-
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ranieri-config
+  namespace: ranieri-prod
+data:
+  CLICKHOUSE_HOST: "clickhouse-service"
+  CLICKHOUSE_PORT: "8123"
+  CLICKHOUSE_DB: "cctech_audit_secure"
+  ALLOWED_ORIGINS: "https://your-domain.ru"
+  LOG_LEVEL: "INFO"
