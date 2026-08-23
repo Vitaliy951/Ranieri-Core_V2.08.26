@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranieri Core — Центральный пульт управления</title>
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts (Inter) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0b1120;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .dashboard-container {
+            max-width: 1400px;
+            width: 100%;
+            background: linear-gradient(145deg, #111b2e, #0f172a);
+            border-radius: 40px;
+            padding: 30px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.05);
+            border: 1px solid #1e293b;
+        }
+
+        /* --- HEADER --- */
+        .header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #1e293b;
+            margin-bottom: 30px;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .badge-saas {
+            background: linear-gradient(135deg, #22d3ee, #06b6d4);
+            color: #0b1120;
+            font-weight: 800;
+            font-size: 0.7rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .header-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #e0e7ff, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header-title span { font-weight: 300; -webkit-text-fill-color: #94a3b8; }
+        .header-sub {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+        .stats {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .stat-item {
+            background: #1e293b;
+            padding: 10px 20px;
+            border-radius: 16px;
+            border: 1px solid #2d3a4f;
+            text-align: center;
+            min-width: 140px;
+        }
+        .stat-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #22d3ee;
+        }
+        .stat-value.green { color: #34d399; }
+
+        /* --- GRID --- */
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+        }
+        @media (max-width: 1024px) {
+            .grid-3 { grid-template-columns: 1fr; }
+        }
+
+        /* --- CARDS --- */
+        .card {
+            background: #1a2538;
+            border-radius: 24px;
+            padding: 24px;
+            border: 1px solid #2d3a4f;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+            margin-bottom: 24px;
+        }
+        .card:hover { border-color: #3b4a66; }
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .card-title i { color: #22d3ee; width: 24px; }
+        .card-desc {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-bottom: 18px;
+            line-height: 1.5;
+        }
+
+        /* --- BUTTONS --- */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s;
+            width: 100%;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .btn-red {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            box-shadow: 0 4px 15px rgba(239,68,68,0.3);
+        }
+        .btn-red:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(239,68,68,0.5); }
+        .btn-amber {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #0b1120;
+            box-shadow: 0 4px 15px rgba(245,158,11,0.3);
+        }
+        .btn-amber:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(245,158,11,0.5); }
+        .btn-emerald {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            box-shadow: 0 4px 15px rgba(16,185,129,0.3);
+        }
+        .btn-emerald:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(16,185,129,0.5); }
+        .btn-cyan {
+            background: linear-gradient(135deg, #22d3ee, #06b6d4);
+            color: #0b1120;
+            box-shadow: 0 4px 15px rgba(34,211,238,0.3);
+        }
+        .btn-cyan:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(34,211,238,0.5); }
+        .btn-slate {
+            background: #2d3a4f;
+            color: #e2e8f0;
+            border: 1px solid #3b4a66;
+        }
+        .btn-slate:hover { background: #3b4a66; }
+
+        /* --- FORM ELEMENTS --- */
+        .input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        .input-group label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #94a3b8;
+            letter-spacing: 0.3px;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .input-group input, .input-group select {
+            width: 100%;
+            background: #0b1120;
+            border: 1px solid #2d3a4f;
+            border-radius: 14px;
+            padding: 12px 16px;
+            color: #e2e8f0;
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: 0.2s;
+        }
+        .input-group input:focus, .input-group select:focus {
+            border-color: #22d3ee;
+            box-shadow: 0 0 0 3px rgba(34,211,238,0.15);
+        }
+        .input-group select option { background: #1a2538; }
+
+        /* --- VETO STATUS --- */
+        .veto-alert {
+            display: none;
+            margin-top: 14px;
+            background: #7f1d1d;
+            border: 1px solid #ef4444;
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 0.8rem;
+            color: #fca5a5;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+        /* --- COMMITTEE OUTPUT --- */
+        .committee-output {
+            display: none;
+            margin-top: 14px;
+            background: #0b1120;
+            border: 1px solid #2d3a4f;
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 0.8rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: #cbd5e1;
+            line-height: 1.6;
+        }
+
+        /* --- BILLING --- */
+        .billing-stats {
+            background: #0b1120;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .billing-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+        }
+        .billing-row .label { color: #94a3b8; }
+        .billing-row .value { font-weight: 700; color: #e2e8f0; }
+        .billing-row .value.green { color: #34d399; }
+
+        /* --- OUTPUT CONSOLE --- */
+        .console {
+            display: none;
+            margin-top: 20px;
+            background: #0b1120;
+            border: 1px solid #2d3a4f;
+            border-radius: 16px;
+            padding: 18px;
+        }
+        .console-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .console-header h4 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #22d3ee;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .console-header .time {
+            font-size: 0.7rem;
+            color: #64748b;
+        }
+        .verdict-badge {
+            text-align: center;
+            font-weight: 800;
+            padding: 10px;
+            border-radius: 12px;
+            margin-bottom: 14px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .verdict-badge.approve { background: #064e3b; color: #34d399; border: 1px solid #34d399; }
+        .verdict-badge.reject { background: #7f1d1d; color: #f87171; border: 1px solid #f87171; }
+        .verdict-badge.veto { background: #7f1d1d; color: #fca5a5; border: 1px solid #f87171; animation: pulse 1.5s infinite; }
+        .json-log {
+            background: #0f172a;
+            padding: 14px;
+            border-radius: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: #cbd5e1;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            border: 1px solid #1e293b;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        /* --- SPINNER --- */
+        .spinner-wrapper {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .spinner {
+            border: 3px solid rgba(34,211,238,0.1);
+            border-top: 3px solid #22d3ee;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+
+        /* --- TOAST --- */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            z-index: 9999;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            animation: slideIn 0.3s ease-out;
+            max-width: 420px;
+            backdrop-filter: blur(8px);
+        }
+        .toast-success { background: rgba(6,78,59,0.9); color: #34d399; border: 1px solid #34d399; }
+        .toast-error { background: rgba(127,29,29,0.9); color: #f87171; border: 1px solid #f87171; }
+        .toast-info { background: rgba(30,58,95,0.9); color: #60a5fa; border: 1px solid #60a5fa; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 768px) {
+            .dashboard-container { padding: 16px; }
+            .header { flex-direction: column; align-items: start; gap: 16px; }
+            .stats { width: 100%; justify-content: space-between; }
+            .stat-item { min-width: auto; flex: 1; }
+            .input-group { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 480px) {
+            .stat-item { padding: 8px; }
+            .stat-value { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-container">
+
+    <!-- HEADER -->
+    <header class="header">
+        <div class="header-left">
+            <div>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <span class="badge-saas"><i class="fas fa-cloud"></i> SaaS</span>
+                    <span class="header-title">Ranieri <span>Core</span></span>
+                </div>
+                <div class="header-sub"><i class="fas fa-microchip"></i> Пульт управления ИИ-скорингом и B2G-фабрикой</div>
+            </div>
+        </div>
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-label"><i class="fas fa-chart-simple"></i> Выручка (Г1)</div>
+                <div class="stat-value" id="revenueDisplay">410.0 млн ₽</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label"><i class="fas fa-coins"></i> Чистая прибыль</div>
+                <div class="stat-value green" id="profitDisplay">133.0 млн ₽</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN GRID -->
+    <div class="grid-3">
+
+        <!-- LEFT COLUMN -->
+        <div>
+
+            <!-- VETO CARD -->
+            <div class="card">
+                <div class="card-title"><i class="fas fa-gavel"></i> Пульт Председателя СД</div>
+                <div class="card-desc">Мгновенная блокировка транзакций при обнаружении фрода или ценовых аномалий.</div>
+                <button onclick="triggerChairmanVeto()" class="btn btn-red">
+                    <i class="fas fa-ban"></i> Активировать ВЕТО
+                </button>
+                <div id="vetoStatus" class="veto-alert">
+                    <i class="fas fa-exclamation-triangle"></i> [CRITICAL] ВЕТО АКТИВИРОВАНО. СДЕЛКА ЗАБЛОКИРОВАНА.
+                </div>
+            </div>
+
+            <!-- COMMITTEE CARD -->
+            <div class="card">
+                <div class="card-title"><i class="fas fa-users"></i> Комитет Правления</div>
+                <div class="card-desc">Переключение водопада СФО при достижении триггера дефолтов.</div>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <button onclick="castCommitteeVote('SEQUENTIAL')" class="btn btn-amber">
+                        <i class="fas fa-arrow-down"></i> Sequential Paydown (Аварийный)
+                    </button>
+                    <button onclick="castCommitteeVote('REVOLVING')" class="btn btn-emerald">
+                        <i class="fas fa-rotate"></i> Револьверный период (Штатный)
+                    </button>
+                </div>
+                <div id="committeeOutput" class="committee-output"></div>
+            </div>
+
+            <!-- BILLING CARD -->
+            <div class="card">
+                <div class="card-title"><i class="fas fa-calculator"></i> Бухгалтерский B2B Клиринг</div>
+                <div class="card-desc">Автоматическое списание по тарифу 7 130 ₽ за скоринг-запрос (Cost Plus).</div>
+                <div class="billing-stats">
+                    <div class="billing-row">
+                        <span class="label"><i class="fas fa-arrow-right"></i> Переведено в ИТ-дочку:</span>
+                        <span class="value" id="accountantTransferred">0.00 ₽</span>
+                    </div>
+                    <div class="billing-row">
+                        <span class="label"><i class="fas fa-shield-halved"></i> Экономия на ИТ-льготах:</span>
+                        <span class="value green" id="accountantTaxShield">0.00 ₽</span>
+                    </div>
+                </div>
+                <button onclick="runWaterfallClearing()" class="btn btn-slate">
+                    <i class="fas fa-water"></i> Запустить купонный Водопад СФО
+                </button>
+            </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN (SCORING) -->
+        <div>
+
+            <div class="card" style="margin-bottom:0;">
+                <div class="card-title"><i class="fas fa-rocket"></i> Оболочка ИИ-Скоринга</div>
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px;">
+                    <span style="display:inline-flex; align-items:center; gap:6px; font-size:0.75rem; color:#34d399;">
+                        <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#34d399; animation:pulse 1.5s infinite;"></span>
+                        SMEV 3.0 ШЛЮЗ АКТИВЕН
+                    </span>
+                </div>
+
+                <!-- FORM -->
+                <div class="input-group">
+                    <div>
+                        <label>UID Клиента</label>
+                        <input id="clientUid" type="text" value="CLI-CONVEYER-2026">
+                    </div>
+                    <div>
+                        <label>Сумма кредита (₽)</label>
+                        <input id="loanAmt" type="number" value="6500000">
+                    </div>
+                    <div>
+                        <label>Цена застройщика (₽)</label>
+                        <input id="propValue" type="number" value="8200000">
+                    </div>
+                    <div>
+                        <label>Площадь (кв.м)</label>
+                        <input id="totalArea" type="number" value="55">
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin-bottom:18px;">
+                    <label style="font-size:0.75rem; font-weight:600; color:#94a3b8; text-transform:uppercase;">Тип проверки:</label>
+                    <select id="scoringType" style="flex:1; background:#0b1120; border:1px solid #2d3a4f; border-radius:14px; padding:10px 14px; color:#e2e8f0; outline:none; font-family:'Inter',sans-serif;">
+                        <option value="BASE">BASE (ФНС+ФССП) — 70 ₽</option>
+                        <option value="PREMIUM" selected>PREMIUM (+LSTR-AVM) — 250 ₽</option>
+                    </select>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:16px;">
+                    <button onclick="executeClientScoring()" class="btn btn-cyan" style="flex:1;">
+                        <i class="fas fa-play"></i> Запустить скоринг (STP)
+                    </button>
+                    <div id="loadingSpinner" class="spinner-wrapper">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+
+                <!-- CONSOLE OUTPUT -->
+                <div id="conveyorOutput" class="console">
+                    <div class="console-header">
+                        <h4><i class="fas fa-terminal"></i> Лог андеррайтинга</h4>
+                        <span class="time" id="responseTime"></span>
+                    </div>
+                    <div id="verdictBadge" class="verdict-badge"></div>
+                    <div id="jsonMetrics" class="json-log"></div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ===== JAVASCRIPT ===== -->
+<script>
+    const API_BASE = "http://localhost:8000/api/v1/saas";
+    const API_KEY = "bank_alpha_token_123";
+
+    let accumulatedBilling = 0;
+    let isVetoed = false;
+
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+
+    function triggerChairmanVeto() {
+        isVetoed = true;
+        const badge = document.getElementById("vetoStatus");
+        badge.style.display = "block";
+        showToast("🔴 Право стратегического ВЕТО активировано.", "error");
+    }
+
+    function castCommitteeVote(type) {
+        const block = document.getElementById("committeeOutput");
+        block.style.display = "block";
+        if(type === 'SEQUENTIAL') {
+            block.innerHTML = `
+                <div style="color:#f87171;font-weight:700;">[VOTE] Аварийный триггер дефолтов!</div>
+                <div>• Голоса членов Правления: 3/3 (Кворум)</div>
+                <div>• Режим: SEQUENTIAL PAYDOWN. Купоны Класса Б заморожены.</div>
+            `;
+            showToast("🏛️ Комитет: SEQUENTIAL PAYDOWN", "info");
+        } else {
+            block.innerHTML = `
+                <div style="color:#34d399;font-weight:700;">[VOTE] Пул стабилен.</div>
+                <div>• Голоса членов Правления: 3/3 (Кворум)</div>
+                <div>• Режим: REVOLVING (стандартный).</div>
+            `;
+            showToast("🏛️ Комитет: REVOLVING режим сохранен", "success");
+        }
+    }
+
+    function runWaterfallClearing() {
+        if (accumulatedBilling === 0) {
+            showToast("Ошибка: Сначала выполните скоринг.", "error");
+            return;
+        }
+        const total = accumulatedBilling * 14;
+        showToast(`✅ Водопад СФО: распределено ${total.toLocaleString('ru-RU')} ₽.`, "success");
+    }
+
+    async function executeClientScoring() {
+        const loan = document.getElementById("loanAmt").value;
+        const area = document.getElementById("totalArea").value;
+        const prop = document.getElementById("propValue").value;
+
+        if (!loan || parseFloat(loan) <= 0) { showToast("Укажите сумму кредита > 0", "error"); return; }
+        if (!area || parseFloat(area) <= 0) { showToast("Укажите площадь > 0", "error"); return; }
+        if (!prop || parseFloat(prop) <= 0) { showToast("Укажите цену застройщика > 0", "error"); return; }
+
+        document.getElementById("loadingSpinner").style.display = "flex";
+        document.getElementById("conveyorOutput").style.display = "none";
+
+        const payload = {
+            client_uid: document.getElementById("clientUid").value || "CLI-CONVEYER-2026",
+            snils: "123-456-789 00",
+            inn_fiz: "771234567890",
+            requested_loan_amount: parseFloat(loan),
+            declared_property_value: parseFloat(prop),
+            total_area: parseFloat(area),
+            house_type: "MONOLITH",
+            scoring_type: document.getElementById("scoringType").value
+        };
+
+        const startTime = performance.now();
+
+        try {
+            const response = await fetch(`${API_BASE}/evaluate?api_key=${API_KEY}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+
+            if (response.status === 402) {
+                showToast("❌ Недостаточно средств на балансе SaaS!", "error");
+                document.getElementById("loadingSpinner").style.display = "none";
+                return;
+            }
+            if (!response.ok) {
+                const err = await response.text();
+                showToast(`❌ Ошибка ${response.status}: ${err}`, "error");
+                document.getElementById("loadingSpinner").style.display = "none";
+                return;
+            }
+
+            const data = await response.json();
+
+            accumulatedBilling += data.charged_rub || 0;
+            document.getElementById("accountantTransferred").innerText = `${accumulatedBilling.toLocaleString('ru-RU')}.00 ₽`;
+            document.getElementById("accountantTaxShield").innerText = `${(accumulatedBilling * 0.20).toLocaleString('ru-RU')}.00 ₽`;
+
+            const outBlock = document.getElementById("conveyorOutput");
+            const badge = document.getElementById("verdictBadge");
+            const metrics = document.getElementById("jsonMetrics");
+            const timeSpan = document.getElementById("responseTime");
+
+            outBlock.style.display = "block";
+            timeSpan.innerText = `⏱️ ${elapsed} сек.`;
+
+            let finalVerdict = data.verdict || "APPROVE";
+            let reason = data.reason || "";
+            if (isVetoed) {
+                finalVerdict = "VETOED";
+                reason = "Сделка заблокирована правом вето Председателя СД.";
+            }
+
+            badge.className = "verdict-badge";
+            if (finalVerdict === "APPROVE") {
+                badge.classList.add("approve");
+                badge.innerText = "✅ СТАТУС: КРЕДИТ ОДОБРЕН";
+            } else if (finalVerdict === "VETOED") {
+                badge.classList.add("veto");
+                badge.innerText = "⛔ СТАТУС: ТРАНЗАКЦИЯ ЗАБЛОКИРОВАНА ВЕТО";
+            } else {
+                badge.classList.add("reject");
+                badge.innerText = `❌ СТАТУС: ОТКАЗ (${finalVerdict})`;
+            }
+
+            let logJson = {
+                scoring_uid: data.scoring_uid || "N/A",
+                timestamp: data.timestamp || new Date().toISOString(),
+                charged_rub: data.charged_rub || 0,
+                verdict: finalVerdict,
+                reason: reason,
+                credit_risk_assessment: data.credit_risk_assessment || {}
+            };
+            if (data.property_valuation_lstr) {
+                logJson.property_valuation_lstr = data.property_valuation_lstr;
+            }
+            metrics.textContent = JSON.stringify(logJson, null, 2);
+
+            showToast(`✅ Скоринг выполнен за ${elapsed} сек. Вердикт: ${finalVerdict}`, "success");
+
+        } catch (error) {
+            showToast(`❌ Критическая ошибка: ${error.message}`, "error");
+        } finally {
+            document.getElementById("loadingSpinner").style.display = "none";
+        }
+    }
+
+    // Инициализация: скрываем спиннер
+    window.onload = function() {
+        document.getElementById("loadingSpinner").style.display = "none";
+    };
+</script>
+
+</body>
+</html>
