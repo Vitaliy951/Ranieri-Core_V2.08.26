@@ -1,1 +1,5 @@
-
+{
+  "status": "SUCCESS",
+  "processed_records": 15000000,
+  "calibrated_median_price": 245000.0
+}
