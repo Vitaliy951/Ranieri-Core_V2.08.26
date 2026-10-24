@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#140F26">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Ranieri Bank — интернет-банк</title>
+<style>
+:root{--bg:#140F26;--bg2:#1D1538;--bg3:#281D4F;--bg4:#332562;--line:rgba(255,255,255,.08);
+--acc:#FFDD2D;--acc2:#7C5CFF;--grn:#34D399;--red:#FF6B6B;--org:#FFA940;--cyn:#38BDF8;
+--tx:#fff;--mut:rgba(255,255,255,.55);--mut2:rgba(255,255,255,.35);--r:24px}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:#0B0817 radial-gradient(90% 60% at 50% 0%,#241a4a,#0B0817);color:var(--tx);
+font-family:'Inter',-apple-system,'Segoe UI',Roboto,sans-serif;display:flex;justify-content:center;align-items:center;overflow:hidden;font-variant-numeric:tabular-nums}
+.app{position:relative;width:100%;height:100dvh;background:var(--bg) radial-gradient(120% 55% at 50% -12%,#312065 0%,transparent 60%);display:flex;flex-direction:column;overflow:hidden}
+@media(min-width:768px){.app{width:414px;height:min(94dvh,880px);border-radius:48px;border:1px solid rgba(255,255,255,.09);box-shadow:0 50px 120px rgba(0,0,0,.65)}}
+.hidden{display:none!important}
+.hb{filter:blur(10px);user-select:none}
+button{font-family:inherit;cursor:pointer}
+input{font-family:inherit}
+::-webkit-scrollbar{display:none}
+
+/* ---------- ОВЕРЛЕИ АВТОРИЗАЦИИ ---------- */
+.overlay{position:absolute;inset:0;z-index:60;background:var(--bg) radial-gradient(120% 55% at 50% -12%,#312065 0%,transparent 60%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 32px;transition:opacity .4s,visibility .4s}
+.overlay.off{opacity:0;visibility:hidden}
+.brand{width:84px;height:84px;border-radius:26px;background:var(--acc);display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:900;color:#141005;box-shadow:0 20px 60px rgba(255,221,45,.35);margin-bottom:18px;animation:pop .6s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.5);opacity:0}}
+.bname{font-size:26px;font-weight:800;letter-spacing:-.5px}
+.btag{color:var(--mut);font-size:13.5px;margin-top:6px;text-align:center;line-height:1.5}
+.pdots{display:flex;gap:16px;margin:34px 0 8px}
+.pd{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.12);transition:.2s}
+.pd.on{background:var(--acc);transform:scale(1.15)}
+.ptitle{font-size:16.5px;font-weight:700;color:var(--mut);min-height:22px;text-align:center}
+.shake{animation:shake .5s}
+@keyframes shake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-6px)}40%,60%{transform:translateX(6px)}}
+.kpad{display:grid;grid-template-columns:repeat(3,84px);gap:14px;margin-top:28px}
+.kbtn{width:84px;height:84px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid var(--line);color:#fff;font-size:26px;font-weight:700;transition:.15s}
+.kbtn:active{transform:scale(.9);background:rgba(255,255,255,.14)}
+.alink{margin-top:26px;color:var(--acc);background:none;border:none;font-size:14.5px;font-weight:600}
+
+/* ---------- СТРУКТУРА ЭКРАНОВ ---------- */
+.screens{flex:1;overflow-y:auto;overscroll-behavior:contain}
+.screen{display:none;padding-bottom:130px}
+.screen.active{display:block;animation:fadeUp .28s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}}
+.pad{padding:0 20px}
+.hd{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:16px 20px 12px;background:rgba(20,15,38,.82);backdrop-filter:blur(18px)}
+.hd h2{font-size:21px;font-weight:800;letter-spacing:-.3px;flex:1}
+.cbtn{width:40px;height:40px;border-radius:14px;background:var(--bg3);border:1px solid var(--line);color:#fff;display:flex;align-items:center;justify-content:center;position:relative;flex:none}
+.cbtn svg{width:20px;height:20px}
+.dot{position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--red);border:2px solid var(--bg2)}
+.avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--acc2),#B026B9);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex:none}
+.sect{display:flex;justify-content:space-between;align-items:center;margin:24px 2px 12px}
+.sect h3{font-size:16px;font-weight:800;letter-spacing:-.2px}
+.sect a{color:var(--acc);font-size:13px;font-weight:600;text-decoration:none;cursor:pointer}
+
+/* ---------- КАРТЫ ---------- */
+.cards{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 20px 10px;scrollbar-width:none}
+.ccard{min-width:296px;scroll-snap-align:start;border-radius:26px;padding:20px;position:relative;overflow:hidden;flex:none;box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.ccard.main{background:linear-gradient(135deg,#2E2360,#5233B8)}
+.ccard.credit{background:linear-gradient(135deg,#4A1D6E,#B026B9)}
+.ccard.save{background:linear-gradient(135deg,#0C463D,#16A34A)}
+.ccard.ghost{min-width:150px;background:transparent;border:1.5px dashed rgba(255,255,255,.25);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--mut);box-shadow:none}
+.ctop{display:flex;justify-content:space-between;align-items:flex-start}
+.cname{font-size:15px;font-weight:700}
+.cnum{font-size:13px;color:rgba(255,255,255,.7);margin-top:3px;letter-spacing:1px}
+.chip{width:38px;height:28px;border-radius:8px;background:var(--acc);position:relative}
+.chip:after{content:'';position:absolute;inset:5px;border:1.5px solid rgba(0,0,0,.35);border-radius:5px}
+.cbal{font-size:30px;font-weight:800;margin-top:22px;letter-spacing:-.5px}
+.csub{font-size:12.5px;color:rgba(255,255,255,.65);margin-top:4px}
+.cpay{position:absolute;right:14px;bottom:16px;font-size:22px;opacity:.9}
+.sbar{height:6px;border-radius:3px;background:rgba(255,255,255,.2);margin-top:10px;overflow:hidden}
+.sbar i{display:block;height:100%;background:#fff;border-radius:3px}
+.frozen{position:absolute;inset:0;background:rgba(11,8,23,.78);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;font-weight:800;letter-spacing:1px}
+
+/* ---------- ВИДЖЕТЫ ---------- */
+.qgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.qact{background:var(--bg2);border:1px solid var(--line);border-radius:20px;padding:14px 6px;display:flex;flex-direction:column;align-items:center;gap:8px;font-size:11.5px;font-weight:600;color:#fff;text-align:center}
+.qact:active{transform:scale(.95)}
+.qi{width:44px;height:44px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:21px}
+.banner{border-radius:26px;padding:20px;position:relative;overflow:hidden;background:linear-gradient(120deg,#3A2C7E,#7C3AED 55%,#B026B9);box-shadow:0 18px 40px rgba(124,58,237,.28)}
+.banner .bchip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);border-radius:999px;padding:5px 11px;font-size:11.5px;font-weight:700}
+.banner h4{font-size:17px;font-weight:800;margin:10px 0 4px}
+.banner p{font-size:12.5px;color:rgba(255,255,255,.75);line-height:1.5}
+.bbtn{margin-top:14px;background:var(--acc);color:#141005;border:none;border-radius:14px;padding:12px 18px;font-weight:800;font-size:13.5px}
+.pulse{animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(52,211,153,.5)}50%{box-shadow:0 0 0 9px rgba(52,211,153,0)}}
+.card{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.card .ct{font-size:13px;color:var(--mut);font-weight:600}
+.bignum{font-size:32px;font-weight:800;letter-spacing:-.6px;margin-top:4px}
+.subline{font-size:12.5px;color:var(--mut);margin-top:3px}
+.trow{display:flex;align-items:center;gap:12px;padding:10px 0}
+.ti{width:46px;height:46px;border-radius:15px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:21px;flex:none}
+.tmid{flex:1;min-width:0}
+.tmid b{display:block;font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tmid span{font-size:12px;color:var(--mut)}
+.tamt{text-align:right;flex:none}
+.tamt b{font-size:15px;font-weight:700}
+.tamt span{display:block;font-size:11.5px;color:var(--mut2)}
+.dgroup{font-size:12px;font-weight:700;color:var(--mut);margin:18px 2px 4px;letter-spacing:.4px}
+.gplus{color:var(--grn)} .gminus{color:#fff}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 20px 4px;scrollbar-width:none}
+.chip{padding:9px 15px;border-radius:999px;background:var(--bg3);border:1px solid var(--line);font-size:13px;color:#fff;white-space:nowrap;flex:none}
+.chip.on{background:var(--acc);color:#141005;border-color:transparent;font-weight:700}
+.chip .ci{margin-right:5px}
+.bars .brow{margin-bottom:12px}
+.brow .bl{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px}
+.brow .bl span:first-child{color:var(--mut)}
+.bar{height:8px;border-radius:4px;background:var(--bg3);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:4px}
+.spend2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.spend2 .sc{background:var(--bg3);border-radius:16px;padding:13px}
+.spend2 .sc b{font-size:17px;font-weight:800;display:block;margin-top:3px}
+
+/* ---------- ПЛАТЕЖИ ---------- */
+.srch{width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:16px;padding:13px 16px 13px 42px;color:#fff;font-size:15px;outline:none}
+.srch:focus{border-color:rgba(255,221,45,.5)}
+.srchw{position:relative}
+.srchw svg{position:absolute;left:14px;top:13px;width:19px;height:19px;color:var(--mut)}
+.grid6{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ptile{background:var(--bg2);border:1px solid var(--line);border-radius:20px;padding:15px 8px 13px;display:flex;flex-direction:column;align-items:center;gap:8px;font-size:11.8px;font-weight:600;color:#fff;text-align:center}
+.ptile:active{transform:scale(.95)}
+.pib{width:46px;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:22px}
+
+/* ---------- ИПОТЕКА / СКОРИНГ ---------- */
+.mform{display:flex;flex-direction:column;gap:14px}
+.field label{display:block;font-size:12px;color:var(--mut);font-weight:600;margin-bottom:7px}
+.inp{width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:16px;padding:14px 16px;color:#fff;font-size:16.5px;font-weight:600;outline:none;transition:.2s}
+.inp:focus{border-color:var(--acc)}
+.seg{display:flex;background:var(--bg3);border-radius:16px;padding:4px;gap:4px}
+.seg button{flex:1;padding:11px 4px;border-radius:12px;background:transparent;border:none;color:var(--mut);font-size:13px;font-weight:600;transition:.2s}
+.seg button.on{background:var(--bg4);color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.btn{width:100%;padding:16px;border-radius:18px;background:var(--acc);color:#141005;font-weight:800;font-size:16px;border:none;transition:.15s;letter-spacing:-.2px}
+.btn:active{transform:scale(.98)}
+.btn.ghost{background:var(--bg3);color:#fff;border:1px solid var(--line)}
+.btn.red{background:rgba(255,107,107,.12);color:var(--red)}
+.btn:disabled{opacity:.45}
+details.modinfo{background:var(--bg2);border:1px solid var(--line);border-radius:18px;padding:0 16px}
+details.modinfo summary{padding:14px 0;font-size:13.5px;font-weight:700;cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px}
+details.modinfo summary::-webkit-details-marker{display:none}
+details.modinfo .mi{font-size:12.5px;color:var(--mut);line-height:1.6;padding-bottom:14px;display:flex;flex-direction:column;gap:6px}
+.pstep{display:flex;gap:13px;align-items:center;padding:13px 15px;background:var(--bg2);border:1px solid var(--line);border-radius:18px;margin-bottom:10px}
+.pic{width:38px;height:38px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex:none;font-weight:800;font-size:13px;background:var(--bg3);color:var(--mut)}
+.pic.run{background:transparent}
+.spin{width:22px;height:22px;border-radius:50%;border:3px solid rgba(255,221,45,.25);border-top-color:var(--acc);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pic.okp{background:rgba(52,211,153,.16);color:var(--grn)}
+.pic.badp{background:rgba(255,107,107,.16);color:var(--red)}
+.pstep .pl{flex:1}
+.pstep .pl b{font-size:14px;font-weight:700;display:block}
+.pstep .pl span{font-size:12px;color:var(--mut)}
+.vbadge{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;font-weight:800;font-size:13.5px}
+.v-ok{background:rgba(52,211,153,.15);color:var(--grn)}
+.v-bad{background:rgba(255,107,107,.15);color:var(--red)}
+.dialwrap{display:flex;align-items:center;gap:18px}
+.dial{position:relative;width:118px;height:118px;flex:none}
+.dial svg{transform:rotate(-90deg)}
+.dial circle{fill:none;stroke-width:10;stroke-linecap:round}
+.dial .dr{stroke:rgba(255,255,255,.08)}
+.dial .df{stroke:var(--acc);transition:stroke-dashoffset 1.1s cubic-bezier(.3,.8,.3,1)}
+.dialnum{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.dialnum b{font-size:26px;font-weight:800}
+.dialnum span{font-size:9.5px;color:var(--mut);text-align:center;line-height:1.3}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.mcell{background:var(--bg3);border-radius:16px;padding:12px 14px}
+.mcell span{font-size:11px;color:var(--mut);font-weight:600}
+.mcell b{display:block;font-size:15.5px;font-weight:800;margin-top:3px}
+.smev{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.smev .sc{display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border-radius:12px;padding:8px 12px;font-size:11.5px;color:var(--mut);font-weight:600}
+.logline{font-size:13px;padding:10px 13px;border-left:3px solid var(--acc2);background:var(--bg3);border-radius:0 12px 12px 0;margin-top:8px;line-height:1.5}
+.logline.bad{border-color:var(--red)}
+.gcard{background:var(--bg3);border-radius:18px;padding:14px;margin-top:10px}
+.gcard .gl{font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:5px}
+.gcard code{font-family:'SF Mono',Consolas,monospace;font-size:12.5px;word-break:break-all;color:#D9CBFF}
+.gcodewrap{display:flex;align-items:center;gap:14px;margin-top:6px}
+#gcode{font-size:34px;font-weight:800;letter-spacing:5px;color:var(--acc)}
+.gring{width:40px;height:40px;border-radius:50%;background:conic-gradient(var(--acc) var(--p,0%),rgba(255,255,255,.1) 0);display:flex;align-items:center;justify-content:center}
+.gring i{width:30px;height:30px;border-radius:50%;background:var(--bg2)}
+
+/* ---------- НАВИГАЦИЯ ---------- */
+.bnav{display:flex;justify-content:space-around;align-items:flex-end;padding:10px 6px calc(12px + env(safe-area-inset-bottom));background:rgba(20,15,38,.92);backdrop-filter:blur(24px);border-top:1px solid var(--line)}
+.nb{background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--mut);font-size:10px;font-weight:600;flex:1;padding:0}
+.nb .icw{padding:5px 16px;border-radius:16px;transition:.2s}
+.nb.active{color:var(--acc)}
+.nb.active .icw{background:rgba(255,221,45,.13)}
+.nb svg{width:23px;height:23px}
+.nb.center{flex:0 0 72px;margin-top:-30px}
+.nb.center .cic{width:58px;height:58px;border-radius:50%;background:var(--acc);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 30px rgba(255,221,45,.4);transition:.2s}
+.nb.center:active .cic{transform:scale(.93)}
+.nb.center svg{width:26px;height:26px;color:#141005}
+.nb.center span{color:var(--mut)}
+
+/* ---------- ШИТЫ / ТОСТЫ ---------- */
+#sheet-root .back{position:absolute;inset:0;background:rgba(5,3,12,.6);opacity:0;transition:.25s;z-index:80}
+#sheet-root .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg2);border-radius:30px 30px 0 0;padding:10px 20px calc(26px + env(safe-area-inset-bottom));transform:translateY(100%);transition:.32s cubic-bezier(.2,.9,.3,1);z-index:81;max-height:84%;overflow-y:auto;box-shadow:0 -20px 60px rgba(0,0,0,.5)}
+#sheet-root.open .back{opacity:1}
+#sheet-root.open .sheet{transform:none}
+.grab{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.25);margin:4px auto 14px}
+.shead{font-size:19px;font-weight:800;letter-spacing:-.3px;margin-bottom:4px}
+.ssub{font-size:13px;color:var(--mut);margin-bottom:16px}
+#toast{position:absolute;left:50%;bottom:112px;transform:translate(-50%,16px);opacity:0;transition:.3s;z-index:90;background:#2B2350;border:1px solid var(--line);padding:11px 17px;border-radius:15px;font-size:13.5px;max-width:86%;text-align:center;pointer-events:none}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.ok{border-left:3px solid var(--grn)}
+#toast.err{border-left:3px solid var(--red)}
+.sw{position:relative;width:48px;height:29px;flex:none;display:inline-block}
+.sw input{opacity:0;width:0;height:0}
+.sw i{position:absolute;inset:0;border-radius:15px;background:rgba(255,255,255,.12);transition:.25s}
+.sw i:after{content:'';position:absolute;left:3px;top:3px;width:23px;height:23px;border-radius:50%;background:#fff;transition:.25s;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.sw input:checked+i{background:var(--grn)}
+.sw input:checked+i:after{transform:translateX(19px)}
+.mrow{display:flex;align-items:center;gap:13px;padding:14px 0;border-bottom:1px solid var(--line)}
+.mrow:last-child{border-bottom:none}
+.mrow .mm{flex:1;min-width:0}
+.mrow .mm b{font-size:14.5px;font-weight:600;display:block}
+.mrow .mm span{font-size:12px;color:var(--mut)}
+.mico{width:40px;height:40px;border-radius:14px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:19px;flex:none}
+.rates .rrow{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}
+.rates .rrow:last-child{border:none}
+.rrow .rl{display:flex;align-items:center;gap:10px;font-weight:600;font-size:14px}
+.fl{width:30px;height:22px;border-radius:6px;overflow:hidden;flex:none}
+.delta{font-size:12.5px;font-weight:700}
+.up{color:var(--grn)} .dn{color:var(--red)}
+.qrw{background:#fff;border-radius:18px;padding:16px;width:220px;margin:8px auto}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- ======== SPLASH ======== -->
+  <div class="overlay" id="ov-splash">
+    <div class="brand">R</div>
+    <div class="bname">Ranieri Bank</div>
+    <div class="btag">Финтех-ядро на базе платформы<br>Ranieri Core · Scoring &amp; AVM</div>
+  </div>
+
+  <!-- ======== СОЗДАНИЕ PIN ======== -->
+  <div class="overlay off hidden" id="ov-setup">
+    <div class="brand">R</div>
+    <div class="ptitle" id="setup-title">Придумайте PIN-код для входа</div>
+    <div class="pdots" id="setup-dots"></div>
+    <div class="kpad" id="kpad-setup"></div>
+    <button class="alink" onclick="hideAuth();enterApp()">Пропустить (демо-режим)</button>
+  </div>
+
+  <!-- ======== ВХОД ПО PIN ======== -->
+  <div class="overlay off hidden" id="ov-login">
+    <div class="brand">R</div>
+    <div class="ptitle">Введите PIN-код</div>
+    <div class="pdots" id="login-dots"></div>
+    <div class="kpad" id="kpad-login"></div>
+    <button class="alink" id="face-btn" onclick="useFace()">Войти по Face ID 👤</button>
+    <button class="alink" onclick="skipAuth()" style="color:var(--mut)">Войти без PIN (демо)</button>
+  </div>
+
+  <!-- ======== ЭКРАНЫ ======== -->
+  <div class="screens" id="screens">
+
+    <!-- ---------- ГЛАВНАЯ ---------- -->
+    <section class="screen" id="s-home">
+      <div class="hd">
+        <div class="avatar">ВР</div>
+        <div style="flex:1">
+          <div style="font-size:11.5px;color:var(--mut)">Добрый день 👋</div>
+          <div style="font-size:16px;font-weight:800">Виталий</div>
+        </div>
+        <button class="cbtn" onclick="toggleEye()" aria-label="Показать суммы">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>
+        </button>
+        <button class="cbtn" onclick="openNotif()" aria-label="Уведомления">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9a6 6 0 1 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2.2 2.2 0 0 0 4 0"/></svg>
+          <span class="dot" id="bell-dot"></span>
+        </button>
+      </div>
+
+      <!-- Карточки -->
+      <div class="cards">
+        <div class="ccard main" id="card-main" onclick="openCardSheet('main')">
+          <div class="ctop">
+            <div><div class="cname">Ranieri Black</div><div class="cnum">5536 91•• •••• 4417</div></div>
+            <div class="chip"></div>
+          </div>
+          <div class="cbal" id="c-bal-main">0 ₽</div>
+          <div class="csub">Дебетовая · основная</div>
+          <div class="cpay">💳</div>
+          <div class="frozen hidden" id="frozen-main">❄ ЗАМОРОЖЕНА</div>
+        </div>
+        <div class="ccard credit" onclick="openCardSheet('credit')">
+          <div class="ctop">
+            <div><div class="cname">Кредитная · 120 дней</div><div class="cnum">5536 91•• •••• 8802</div></div>
+            <div class="chip"></div>
+          </div>
+          <div class="cbal" id="c-bal-cred">0 ₽</div>
+          <div class="csub" id="c-cred-sub">Лимит 300 000 ₽</div>
+          <div class="cpay">✨</div>
+        </div>
+        <div class="ccard save" onclick="openCardSheet('save')">
+          <div class="ctop">
+            <div><div class="cname">Копилка · 14% годовых</div><div class="cnum">Цель: отпуск на Байкал</div></div>
+            <span style="font-size:22px">🐷</span>
+          </div>
+          <div class="cbal" id="c-sav">0 ₽</div>
+          <div class="sbar"><i id="c-sav-bar" style="width:0%"></i></div>
+          <div class="csub" id="c-sav-sub" style="margin-top:8px"></div>
+        </div>
+        <div class="ccard ghost" onclick="toast('Заказ карты — демо-функция 🙌')">
+          <div style="font-size:26px">＋</div><div style="font-size:12.5px;font-weight:600">Заказать<br>новую карту</div>
+        </div>
+      </div>
+
+      <div class="pad">
+        <!-- Быстрые действия -->
+        <div class="qgrid" style="margin-top:14px">
+          <button class="qact" onclick="openTransfer()"><span class="qi" style="background:rgba(255,221,45,.15)">💸</span>Перевести</button>
+          <button class="qact" onclick="openTopup()"><span class="qi" style="background:rgba(52,211,153,.15)">⬇️</span>Пополнить</button>
+          <button class="qact" onclick="openQr()"><span class="qi" style="background:rgba(124,92,255,.18)">🔳</span>QR-оплата</button>
+          <button class="qact" onclick="go('credit')"><span class="qi" style="background:rgba(255,169,64,.16)">🏦</span>Ипотека</button>
+        </div>
+
+        <!-- Ranieri AI -->
+        <div class="banner" style="margin-top:18px">
+          <span class="bchip"><span class="pulse" style="width:8px;height:8px;border-radius:50%;background:var(--grn);display:inline-block"></span>ИИ-андеррайтинг онлайн</span>
+          <h4>Предварительно одобрено: ипотека до 8 500 000 ₽</h4>
+          <p>3-контурный скоринг Ranieri Core: ПДН и LTV · LightGBM · AVM LSTR-Transformer. Решение за 90 секунд.</p>
+          <button class="bbtn" onclick="go('credit')">Рассчитать ипотеку →</button>
+        </div>
+
+        <!-- Расходы месяца -->
+        <div class="sect"><h3>Расходы в октябре</h3><a onclick="go('history')">Аналитика</a></div>
+        <div class="card">
+          <div class="ct">Потрачено с начала месяца</div>
+          <div class="bignum" id="sp-total">0 ₽</div>
+          <div class="subline">Кэшбэк начислен: <b id="cb-val" style="color:var(--acc)">0 ₽</b> · 1% со всех покупок</div>
+          <div class="spend2" id="sp-cats"></div>
+        </div>
+
+        <!-- Операции -->
+        <div class="sect"><h3>Операции</h3><a onclick="go('history')">Все →</a></div>
+        <div class="card" id="ops-mini" style="padding:6px 16px"></div>
+      </div>
+    </section>
+
+    <!-- ---------- ПЛАТЕЖИ ---------- -->
+    <section class="screen" id="s-pay">
+      <div class="hd"><h2>Платежи и переводы</h2></div>
+      <div class="pad" style="margin-top:4px">
+        <div class="srchw">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input class="srch" id="pay-search" placeholder="Поиск: ЖКХ, МТС, перевод…" oninput="paySearch()">
+        </div>
+        <div class="grid6" style="margin-top:16px" id="pay-grid">
+          <button class="ptile" onclick="openMobile()"><span class="pib" style="background:rgba(56,189,248,.15)">📱</span>Мобильная связь</button>
+          <button class="ptile" onclick="openTransfer()"><span class="pib" style="background:rgba(255,221,45,.15)">💸</span>Переводы</button>
+          <button class="ptile" onclick="openZhkh()"><span class="pib" style="background:rgba(52,211,153,.15)">🏠</span>ЖКУ</button>
+          <button class="ptile" onclick="openGibdd()"><span class="pib" style="background:rgba(255,107,107,.15)">🚔</span>Штрафы ГИБДД</button>
+          <button class="ptile" onclick="openInternet()"><span class="pib" style="background:rgba(124,92,255,.18)">🌐</span>Интернет и ТВ</button>
+          <button class="ptile" onclick="openPayCredit()"><span class="pib" style="background:rgba(255,169,64,.16)">🏦</span>Кредиты</button>
+        </div>
+        <button class="btn ghost" style="margin-top:12px" onclick="openQr">🔳 Оплатить по QR-коду</button>
+        <div class="sect"><h3>Мои шаблоны</h3></div>
+        <div class="chips" id="tpl-row" style="padding:0"></div>
+        <div class="card" style="margin-top:16px;display:flex;gap:12px;align-items:center">
+          <span style="font-size:24px">🤝</span>
+          <div style="flex:1"><b style="font-size:14px">Ranieri Core для бизнеса</b><div style="font-size:12px;color:var(--mut)">SaaS-скоринг и AVM для банков и МФО</div></div>
+          <button class="chip on" onclick="toast('Открываем saas.ranieri.ru… (демо)')">Открыть</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- ИПОТЕКА RANIERI AI ---------- -->
+    <section class="screen" id="s-credit">
+      <div class="hd"><h2>Ипотека · Ranieri AI</h2></div>
+      <div class="pad">
+        <div class="banner">
+          <span class="bchip">⚡ SLA ≤ 90 секунд · STP</span>
+          <h4>Сквозной 3-контурный андеррайтинг</h4>
+          <p>Контур А — стоп-факторы ЦБ (ПДН ≤ 50%, LTV ≤ 80%) · Контур Б — LightGBM + СМЭВ 3.0 · Контур В — AVM LSTR-Transformer по 10-летнему архиву REBPM.</p>
+        </div>
+
+        <div class="sect"><h3>Мои заявки</h3></div>
+        <div class="chips" id="apps-row" style="padding:0"></div>
+
+        <div class="sect"><h3>Параметры заявки</h3></div>
+        <div class="card mform">
+          <div class="field"><label>Стоимость недвижимости, ₽</label><input class="inp" id="f-price" type="number" inputmode="numeric" placeholder="9 500 000"></div>
+          <div class="field"><label>Первоначальный взнос, ₽</label><input class="inp" id="f-down" type="number" inputmode="numeric" placeholder="2 000 000"></div>
+          <div class="field"><label>Площадь объекта, м²</label><input class="inp" id="f-area" type="number" inputmode="decimal" placeholder="38"></div>
+          <div class="field">
+            <label>Тип дома (влияет на AVM-модель)</label>
+            <div class="seg" id="seg-house">
+              <button class="on" data-t="MONOLITH" onclick="setHouse('MONOLITH',this)">Монолит</button>
+              <button data-t="BRICK" onclick="setHouse('BRICK',this)">Кирпич</button>
+              <button data-t="PANEL" onclick="setHouse('PANEL',this)">Панель</button>
+            </div>
+          </div>
+          <div class="field"><label>Срок кредита, лет</label><input class="inp" id="f-term" type="number" inputmode="numeric" value="20"></div>
+          <div class="field"><label>Официальный доход (СФР/ЗИЛС), ₽/мес</label><input class="inp" id="f-income" type="number" inputmode="numeric" placeholder="130 000"></div>
+          <button class="btn ghost" onclick="fillExample()">✨ Заполнить демо-примером</button>
+          <button class="btn" id="btn-score" onclick="runScoring()">🚀 Запустить 3-контурный скоринг</button>
+        </div>
+
+        <details class="modinfo" style="margin-top:12px">
+          <summary>🧠 Данные ИИ-модели (Ranieri Core v3.0.0)</summary>
+          <div class="mi">
+            <div>• Медианная цена м² (архив REBPM, Москва): <b style="color:#fff">245 000 ₽</b></div>
+            <div>• Стресс-коэффициент на 3 года: <b style="color:#fff">0.85</b></div>
+            <div>• Ставка по ипотеке: <b style="color:#fff">15,9%</b> годовых</div>
+            <div>• Источник: ClickHouse · 15,2 млн записей · обновлено 23.10.2026</div>
+          </div>
+        </details>
+
+        <!-- Конвейер скоринга -->
+        <div id="pipeline" class="hidden" style="margin-top:22px">
+          <div class="sect"><h3>Выполняется</h3></div>
+          <div id="psteps"></div>
+        </div>
+
+        <!-- Результат -->
+        <div id="sc-result" class="hidden" style="margin-top:22px"></div>
+      </div>
+    </section>
+
+    <!-- ---------- ИСТОРИЯ ---------- -->
+    <section class="screen" id="s-history">
+      <div class="hd"><h2>История операций</h2></div>
+      <div class="pad">
+        <div class="card">
+          <div class="ct">Октябрь 2026</div>
+          <div class="spend2">
+            <div class="sc"><span class="ct">Доходы</span><b class="gplus" id="sum-inc">0 ₽</b></div>
+            <div class="sc"><span class="ct">Расходы</span><b id="sum-exp">0 ₽</b></div>
+          </div>
+        </div>
+        <div class="chips" style="padding:14px 0 6px" id="h-filters">
+          <button class="chip on" onclick="histFilter('all',this)">Все</button>
+          <button class="chip" onclick="histFilter('out',this)">Расходы</button>
+          <button class="chip" onclick="histFilter('in',this)">Доходы</button>
+        </div>
+        <div id="hist-list" class="card" style="padding:6px 16px 12px"></div>
+        <div class="sect"><h3>Аналитика месяца</h3></div>
+        <div class="card bars" id="h-bars"></div>
+      </div>
+    </section>
+
+    <!-- ---------- ЕЩЁ ---------- -->
+    <section class="screen" id="s-more">
+      <div class="hd"><h2>Профиль</h2></div>
+      <div class="pad">
+        <div class="card" style="display:flex;gap:14px;align-items:center">
+          <div class="avatar" style="width:56px;height:56px;font-size:20px">ВР</div>
+          <div style="flex:1">
+            <b style="font-size:16.5px">Виталий Ранери</b>
+            <div style="font-size:12.5px;color:var(--mut)">+7 916 •••-45-17 · ИНН 77••••••••90</div>
+          </div>
+          <span class="vbadge v-ok" style="font-size:11px;padding:6px 12px">PREMIUM</span>
+        </div>
+
+        <div class="sect"><h3>Безопасность</h3></div>
+        <div class="card">
+          <div class="mrow"><span class="mico">🔐</span><div class="mm"><b>Ranieri Guard · 2FA</b><span id="guard-state">TOTP по RFC 6238</span></div>
+            <label class="sw"><input type="checkbox" id="sw-guard" onchange="guardChange(this)"><i></i></label></div>
+          <div class="mrow"><span class="mico">👤</span><div class="mm"><b>Вход по Face ID</b><span>Биометрия в мобильном приложении</span></div>
+            <label class="sw"><input type="checkbox" id="sw-face" onchange="toggleBiometry(this.checked)"><i></i></label></div>
+          <div class="mrow" onclick="changePin()" style="cursor:pointer"><span class="mico">🗝️</span><div class="mm"><b>Изменить PIN-код</b><span>Требуется для входа в банк</span></div><span style="color:var(--mut)">›</span></div>
+        </div>
+
+        <div class="sect"><h3>Уведомления</h3></div>
+        <div class="card">
+          <div class="mrow"><span class="mico">🔔</span><div class="mm"><b>Push-уведомления</b><span>Операции, кэшбэк, статусы заявок</span></div>
+            <label class="sw"><input type="checkbox" id="sw-notif" onchange="toggleNotif(this.checked)"><i></i></label></div>
+        </div>
+
+        <div class="sect"><h3>Курсы валют</h3><a onclick="toast('Данные ЦБ РФ · демо-кэш 10:00 МСК')">ЦБ РФ</a></div>
+        <div class="card rates">
+          <div class="rrow"><div class="rl"><span class="fl" style="background:linear-gradient(#B22234 25%,#fff 25% 75%,#B22234 75%)"></span>USD</div><b>92,40 ₽</b><span class="delta up">+0,31</span></div>
+          <div class="rrow"><div class="rl"><span class="fl" style="background:linear-gradient(#003399 33%,#FFCC00 33% 66%,#003399 66%)"></span>EUR</div><b>100,15 ₽</b><span class="delta dn">−0,18</span></div>
+          <div class="rrow"><div class="rl"><span class="fl" style="background:linear-gradient(#DE2910 40%,#FFDE00 40% 60%,#DE2910 60%)"></span>CNY</div><b>12,75 ₽</b><span class="delta up">+0,04</span></div>
+        </div>
+
+        <div class="sect"><h3>Инвестиции · демо</h3></div>
+        <div class="card rates">
+          <div class="rrow"><div class="rl">🟡 TCSG · Т-Банк</div><b>4 321,0 ₽</b><span class="delta up">+1,8%</span></div>
+          <div class="rrow"><div class="rl">🟢 SBER · Сбербанк</div><b>315,4 ₽</b><span class="delta dn">−0,6%</span></div>
+          <div class="rrow"><div class="rl">🔵 MGNT · Магнит</div><b>52 100 ₽</b><span class="delta up">+0,4%</span></div>
+        </div>
+
+        <div class="sect"><h3>О приложении</h3></div>
+        <div class="card">
+          <div class="mrow"><span class="mico">⚙️</span><div class="mm"><b>Ranieri Bank 3.0.0</b><span>Клиентское ядро: Ranieri Core (FastAPI)</span></div></div>
+          <div class="mrow" onclick="resetDemo()" style="cursor:pointer"><span class="mico">🧹</span><div class="mm"><b>Сбросить демо-данные</b><span>Баланс, операции, настройки</span></div><span style="color:var(--mut)">›</span></div>
+        </div>
+        <button class="btn red" style="margin-top:18px" onclick="logout()">Выйти из аккаунта</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- ======== НИЖНЯЯ НАВИГАЦИЯ ======== -->
+  <nav class="bnav" id="bnav">
+    <button class="nb active" data-s="home" onclick="go('home')">
+      <span class="icw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h5v-6h4v6h5V9.5"/></svg></span><span>Главная</span></button>
+    <button class="nb" data-s="pay" onclick="go('pay')">
+      <span class="icw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="2.5" y="5.5" width="19" height="13" rx="3"/><path d="M2.5 10h19"/><path d="M6 15h4"/></svg></span><span>Платежи</span></button>
+    <button class="nb center" data-s="credit" onclick="go('credit')">
+      <span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h5v-6h4v6h5V9.5"/><path d="M12 3v3.5" stroke-linecap="round"/></svg></span><span>Ипотека</span></button>
+    <button class="nb" data-s="history" onclick="go('history')">
+      <span class="icw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></span><span>История</span></button>
+    <button class="nb" data-s="more" onclick="go('more')">
+      <span class="icw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1.4-3.6 4.2-5.4 7.5-5.4s6.1 1.8 7.5 5.4"/></svg></span><span>Ещё</span></button>
+  </nav>
+
+  <div id="toast"></div>
+  <div id="sheet-root"></div>
+</div>
+
+<script>
+/* ================================================================
+   RANIERI BANK · клиентский слой над Ranieri Core (FastAPI)
+   Точка интеграции с реальным бэкендом — функция runScoring():
+   замените emulateScoring() на fetch('/api/v1/saas/evaluate', ...)
+   (server.py уже отдаёт CORS allow_origins=["*"]).
+   ================================================================ */
+const $=id=>document.getElementById(id), $$=q=>document.querySelectorAll(q);
+const DEF={pin:null,hide:false,balance:247850.65,savings:184300,goal:500000,
+creditLimit:300000,creditDebt:12400,blocked:false,notifications:true,guard:false,biometry:true,
+apps:[],tx:[],tpl:[],unread:true};
+let S;try{S={...DEF,...JSON.parse(localStorage.getItem('ran')||'{}')}}catch(e){S={
